@@ -42,15 +42,13 @@
 
     .seating-grid { display: grid; gap: 10px; flex: 1; }
     
-    .seat { border: 2px dashed #cbd5e1; min-height: 105px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
+    .seat { border: 2px dashed #cbd5e1; min-height: 115px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
     .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
     
-    /* 學生卡片與頭像樣式 */
-    .student-card { width: 105px; height: 95px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 4px; transition: transform 0.1s, border-color 0.2s; position: relative; }
-    .student-card img.s-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #93c5fd; margin-bottom: 2px; background-color: #fff; }
-    .student-card .s-num { color: #0369a1; font-size: 0.7rem; font-weight: bold; line-height: 1; }
-    .student-card .s-name { font-size: 0.85rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95px; line-height: 1.2; }
-    .student-card .s-eng { font-size: 0.55rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95px; line-height: 1; }
+    /* 學生卡片與頭像樣式（已加大相片） */
+    .student-card { width: 110px; height: 105px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 4px; transition: transform 0.1s, border-color 0.2s; position: relative; }
+    .student-card img.s-avatar { width: 55px; height: 55px; border-radius: 8px; object-fit: cover; border: 1px solid #93c5fd; margin-bottom: 4px; background-color: #fff; }
+    .student-card .s-info { font-size: 0.82rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 102px; line-height: 1.2; text-align: center; }
 
     /* 合班不同顏色標示 */
     .student-card.tag-a { background: #e0f2fe; border-color: #7dd3fc; }
@@ -397,13 +395,12 @@
       card.setAttribute('ondragstart', 'drag(event)');
       card.setAttribute('onclick', 'handleCardClick(event)');
 
-      const numHtml = student.displayNum ? `<div class="s-num">(${student.displayNum})</div>` : '';
+      // 單行格式：例如 (3) 蔡子樂
+      const infoText = student.displayNum ? `(${student.displayNum}) ${student.name}` : student.name;
 
       card.innerHTML = `
         <img class="s-avatar" src="images/${student.name}.JPG" data-step="1" onerror="handleImgError(this, '${student.name}')" alt="">
-        ${numHtml}
-        <div class="s-name">${student.name}</div>
-        <div class="s-eng">${student.eng || ''}</div>
+        <div class="s-info">${infoText}</div>
       `;
       return card;
     }
@@ -485,9 +482,10 @@
       }
     }
 
+    // 匯出高畫質 PNG
     function exportAsImage() {
       clearSelection();
-      html2canvas(document.getElementById('captureArea')).then(canvas => {
+      html2canvas(document.getElementById('captureArea'), { scale: 2, useCORS: true }).then(canvas => {
         const link = document.createElement('a');
         link.download = document.getElementById('classSelect').value + '_班座位表.png';
         link.href = canvas.toDataURL('image/png');
@@ -495,10 +493,11 @@
       });
     }
 
+    // 匯出高畫質 PDF
     function exportAsPDF() {
       clearSelection();
       const { jsPDF } = window.jspdf;
-      html2canvas(document.getElementById('captureArea')).then(canvas => {
+      html2canvas(document.getElementById('captureArea'), { scale: 2, useCORS: true }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('landscape', 'mm', 'a4');
         pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
