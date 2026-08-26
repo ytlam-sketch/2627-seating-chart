@@ -381,14 +381,14 @@
       });
     }
 
-    // 自動嘗試多種大小寫副檔名 (JPG, jpg, PNG, png)
+    // 自動嘗試多種副檔名與大小寫 (.jpg, .JPG, .jpeg, .JPEG, .png, .PNG)
     function handleImgError(img, name) {
       const step = parseInt(img.getAttribute('data-step') || '0');
-      const extensions = ['jpg', 'JPG', 'PNG', 'png', 'jpeg', 'JPEG'];
+      const extensions = ['jpg', 'JPG', 'jpeg', 'JPEG', 'png', 'PNG'];
       
       if (step < extensions.length) {
         img.setAttribute('data-step', step + 1);
-        img.src = `images/${name}.${extensions[step]}`;
+        img.src = `images/${encodeURIComponent(name)}.${extensions[step]}`;
       } else {
         img.style.display = 'none';
       }
@@ -411,7 +411,7 @@
       const numHtml = student.displayNum ? `<div class="s-num">(${student.displayNum})</div>` : '';
 
       card.innerHTML = `
-        <img class="s-avatar" src="images/${student.name}.JPG" data-step="1" onerror="handleImgError(this, '${student.name}')" alt="">
+        <img class="s-avatar" src="images/${encodeURIComponent(student.name)}.JPG" data-step="1" onerror="handleImgError(this, '${student.name}')" alt="">
         ${numHtml}
         <div class="s-name">${student.name}</div>
         <div class="s-eng">${student.eng || ''}</div>
