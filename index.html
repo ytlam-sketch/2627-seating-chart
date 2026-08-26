@@ -10,20 +10,23 @@
     * { box-sizing: border-box; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
     body { margin: 0; padding: 20px; background-color: #f4f6f8; display: flex; gap: 20px; }
     
-    .sidebar { width: 320px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); height: 95vh; overflow-y: auto; }
-    .sidebar h2 { margin-top: 0; font-size: 1.1rem; color: #1e293b; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
-    .form-group { margin-bottom: 15px; }
+    .sidebar { width: 330px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); height: 95vh; overflow-y: auto; }
+    .sidebar h2 { margin-top: 15px; font-size: 1.05rem; color: #1e293b; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+    .sidebar h2:first-of-type { margin-top: 0; }
+    .form-group { margin-bottom: 12px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: #475569; }
     .form-group select, .form-group input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
     
-    .btn { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+    .btn { width: 100%; padding: 9px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; transition: 0.2s; }
     .btn:hover { background: #0056b3; }
+    .btn-clear { background: #fd7e14; }
+    .btn-clear:hover { background: #e06805; }
     .btn-export { background: #28a745; }
     .btn-export:hover { background: #218838; }
     .btn-pdf { background: #dc3545; }
     .btn-pdf:hover { background: #c82333; }
     
-    .student-pool { min-height: 80px; border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; margin-top: 10px; max-height: 200px; overflow-y: auto; }
+    .student-pool { min-height: 90px; border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; margin-top: 10px; max-height: 220px; overflow-y: auto; }
     
     .main-content { flex: 1; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
     .seating-container { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px; }
@@ -37,16 +40,22 @@
     .layout-left { flex-direction: row; }
     .layout-right { flex-direction: row-reverse; }
 
-    .seating-grid { display: grid; gap: 12px; flex: 1; }
+    .seating-grid { display: grid; gap: 10px; flex: 1; }
     
-    .seat { border: 2px dashed #cbd5e1; height: 85px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; }
+    .seat { border: 2px dashed #cbd5e1; min-height: 105px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
     .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
     
-    /* 純文字學生卡片 */
-    .student-card { width: 95px; height: 65px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 2px; }
-    .student-card .s-num { color: #0369a1; font-size: 0.75rem; font-weight: bold; }
-    .student-card .s-name { font-size: 0.9rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 88px; }
-    .student-card .s-eng { font-size: 0.6rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 88px; }
+    /* 學生卡片與頭像樣式 */
+    .student-card { width: 105px; height: 95px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 4px; transition: transform 0.1s, border-color 0.2s; position: relative; }
+    .student-card img.s-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #93c5fd; margin-bottom: 2px; background-color: #fff; }
+    .student-card .s-num { color: #0369a1; font-size: 0.7rem; font-weight: bold; line-height: 1; }
+    .student-card .s-name { font-size: 0.85rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95px; line-height: 1.2; }
+    .student-card .s-eng { font-size: 0.55rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95px; line-height: 1; }
+
+    /* 合班不同顏色標示 */
+    .student-card.tag-a { background: #e0f2fe; border-color: #7dd3fc; }
+    .student-card.tag-b { background: #fef3c7; border-color: #fde047; }
+    .student-card.selected { border: 2px solid #2563eb !important; transform: scale(1.05); box-shadow: 0 0 8px rgba(37,99,235,0.4); }
   </style>
 </head>
 <body>
@@ -56,8 +65,7 @@
     <h2>1. 選擇班別</h2>
     <div class="form-group">
       <label>班別 (Class)</label>
-      <select id="classSelect" onchange="loadClassData()">
-        <!-- 由 JS 生成選項 -->
+      <select id="classSelect" onchange="onClassChange()">
       </select>
     </div>
 
@@ -65,11 +73,11 @@
     <div class="form-group" style="display:flex; gap:8px;">
       <div>
         <label>列數 (Cols)</label>
-        <input type="number" id="cols" value="6" min="1" max="10">
+        <input type="number" id="cols" value="6" min="1" max="12">
       </div>
       <div>
         <label>行數 (Rows)</label>
-        <input type="number" id="rows" value="5" min="1" max="10">
+        <input type="number" id="rows" value="5" min="1" max="12">
       </div>
     </div>
     <div class="form-group">
@@ -81,10 +89,12 @@
         <option value="right">右方</option>
       </select>
     </div>
-    <button class="btn" onclick="renderGridAndStudents()">重置 / 更新座位網格</button>
+    
+    <button class="btn" onclick="renderGridAndStudents()">重置 / 順序填入座位</button>
+    <button class="btn btn-clear" onclick="clearAllSeats()">🧹 清空座位至待分配區</button>
 
     <h2>未安排座位學生</h2>
-    <div class="student-pool" id="studentPool" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+    <div class="student-pool" id="studentPool" ondragover="allowDrop(event)" ondrop="drop(event)" onclick="handlePoolClick(event)"></div>
 
     <h2>3. 匯出座位表</h2>
     <button class="btn btn-export" onclick="exportAsImage()">下載為圖片 (PNG)</button>
@@ -103,7 +113,6 @@
   <script>
     /****************************************************************
      * 全校學生名單資料庫 (2026/2027年度)
-     * 1A 班學生學號均改為 ""，不顯示學號
      ****************************************************************/
     const classData = {
       "1A": [
@@ -264,28 +273,58 @@
     };
 
     let studentIdCounter = 1;
+    let selectedCard = null;
 
-    // 初始化選單
+    const classOptions = [
+      { val: "1A", text: "1A 班" },
+      { val: "2A", text: "2A 班" },
+      { val: "3A", text: "3A 班" },
+      { val: "3B", text: "3B 班" },
+      { val: "3A+3B", text: "3A + 3B 班 (合班)" },
+      { val: "4A", text: "4A 班" },
+      { val: "4B", text: "4B 班" },
+      { val: "4A+4B", text: "4A + 4B 班 (合班)" },
+      { val: "5A", text: "5A 班" },
+      { val: "5B", text: "5B 班" },
+      { val: "5A+5B", text: "5A + 5B 班 (合班)" },
+      { val: "6A", text: "6A 班" },
+      { val: "6B", text: "6B 班" }
+    ];
+
     function initClassSelect() {
       const select = document.getElementById('classSelect');
       select.innerHTML = '';
-      for (let className in classData) {
+      classOptions.forEach(opt => {
         const option = document.createElement('option');
-        option.value = className;
-        option.textContent = className + ' 班';
+        option.value = opt.val;
+        option.textContent = opt.text;
         select.appendChild(option);
-      }
-      loadClassData();
+      });
+      onClassChange();
     }
 
-    // 載入選擇班別
-    function loadClassData() {
+    function getSelectedStudents() {
+      const val = document.getElementById('classSelect').value;
+      if (val.includes('+')) {
+        const [c1, c2] = val.split('+');
+        const list1 = (classData[c1] || []).map(s => ({ ...s, classTag: c1, displayNum: `${c1}-${s.num}` }));
+        const list2 = (classData[c2] || []).map(s => ({ ...s, classTag: c2, displayNum: `${c2}-${s.num}` }));
+        return [...list1, ...list2];
+      } else {
+        return (classData[val] || []).map(s => ({ ...s, classTag: val, displayNum: s.num }));
+      }
+    }
+
+    function onClassChange() {
       const selectedClass = document.getElementById('classSelect').value;
       document.getElementById('classTitle').innerText = '2026/2027年度 ' + selectedClass + ' 班座位表';
+      
+      document.getElementById('cols').value = 6;
+      document.getElementById('rows').value = 5;
+
       renderGridAndStudents();
     }
 
-    // 切換講台位置
     function changeBoardPosition() {
       const pos = document.getElementById('boardPosition').value;
       const container = document.getElementById('seatingContainer');
@@ -295,8 +334,8 @@
       board.className = 'board board-' + pos;
     }
 
-    // 生成網格並自動把學生排入座位
-    function renderGridAndStudents() {
+    function renderGridAndStudents(studentsToRender = null) {
+      clearSelection();
       const cols = parseInt(document.getElementById('cols').value) || 6;
       const rows = parseInt(document.getElementById('rows').value) || 5;
       const grid = document.getElementById('seatingGrid');
@@ -306,25 +345,22 @@
       grid.innerHTML = '';
       pool.innerHTML = '';
 
-      const selectedClass = document.getElementById('classSelect').value;
-      const students = classData[selectedClass] || [];
-
+      const students = studentsToRender || getSelectedStudents();
       let totalSeats = cols * rows;
 
-      // 1. 生成所有座位
       for (let i = 1; i <= totalSeats; i++) {
         const seat = document.createElement('div');
         seat.className = 'seat';
         seat.setAttribute('data-seat-num', `${i}`);
         seat.setAttribute('ondragover', 'allowDrop(event)');
         seat.setAttribute('ondrop', 'drop(event)');
+        seat.setAttribute('onclick', 'handleSeatClick(event)');
         grid.appendChild(seat);
       }
 
-      // 2. 預設按名單順序填入座位
       const seats = grid.children;
       students.forEach((student, index) => {
-        const card = createStudentCard(student.num, student.name, student.eng);
+        const card = createStudentCard(student);
         if (index < totalSeats) {
           seats[index].appendChild(card);
         } else {
@@ -333,27 +369,92 @@
       });
     }
 
-    // 建立純文字卡片 (若學號為空則不顯示括號)
-    function createStudentCard(num, name, eng) {
+    function createStudentCard(student) {
       const card = document.createElement('div');
-      card.className = 'student-card';
+      
+      let tagClass = '';
+      if (student.classTag) {
+        tagClass = student.classTag.endsWith('A') ? 'tag-a' : 'tag-b';
+      }
+
+      card.className = `student-card ${tagClass}`;
       card.draggable = true;
       card.id = 'student-' + studentIdCounter++;
       card.setAttribute('ondragstart', 'drag(event)');
+      card.setAttribute('onclick', 'handleCardClick(event)');
 
-      const numHtml = num ? `<div class="s-num">(${num})</div>` : '';
+      const numHtml = student.displayNum ? `<div class="s-num">(${student.displayNum})</div>` : '';
+      
+      // 自動嘗試抓取 images/學生姓名.JPG 或 .jpg，沒圖片時自動隱藏該 img 標籤
+      const photoUrl = `images/${student.name}.jpg`;
 
       card.innerHTML = `
+        <img class="s-avatar" src="${photoUrl}" onerror="this.style.display='none'" alt="">
         ${numHtml}
-        <div class="s-name">${name}</div>
-        <div class="s-eng">${eng || ''}</div>
+        <div class="s-name">${student.name}</div>
+        <div class="s-eng">${student.eng || ''}</div>
       `;
       return card;
     }
 
-    // 拖拉 (Drag and Drop)
+    function clearAllSeats() {
+      clearSelection();
+      const pool = document.getElementById('studentPool');
+      const cards = document.querySelectorAll('.student-card');
+      cards.forEach(card => pool.appendChild(card));
+    }
+
+    function handleCardClick(ev) {
+      ev.stopPropagation();
+      const card = ev.currentTarget;
+
+      if (!selectedCard) {
+        selectedCard = card;
+        card.classList.add('selected');
+      } else if (selectedCard === card) {
+        clearSelection();
+      } else {
+        const parentA = selectedCard.parentElement;
+        const parentB = card.parentElement;
+
+        parentA.appendChild(card);
+        parentB.appendChild(selectedCard);
+
+        clearSelection();
+      }
+    }
+
+    function handleSeatClick(ev) {
+      if (!selectedCard) return;
+      const seat = ev.currentTarget;
+      if (seat.children.length > 0) {
+        const existingCard = seat.children[0];
+        const parentA = selectedCard.parentElement;
+        parentA.appendChild(existingCard);
+      }
+      seat.appendChild(selectedCard);
+      clearSelection();
+    }
+
+    function handlePoolClick(ev) {
+      if (selectedCard && (ev.target.id === 'studentPool' || ev.target.classList.contains('student-pool'))) {
+        document.getElementById('studentPool').appendChild(selectedCard);
+        clearSelection();
+      }
+    }
+
+    function clearSelection() {
+      if (selectedCard) {
+        selectedCard.classList.remove('selected');
+        selectedCard = null;
+      }
+    }
+
     function allowDrop(ev) { ev.preventDefault(); }
-    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+    function drag(ev) { 
+      clearSelection();
+      ev.dataTransfer.setData("text", ev.target.id); 
+    }
 
     function drop(ev) {
       ev.preventDefault();
@@ -373,8 +474,8 @@
       }
     }
 
-    // 匯出圖片與 PDF
     function exportAsImage() {
+      clearSelection();
       html2canvas(document.getElementById('captureArea')).then(canvas => {
         const link = document.createElement('a');
         link.download = document.getElementById('classSelect').value + '_班座位表.png';
@@ -384,6 +485,7 @@
     }
 
     function exportAsPDF() {
+      clearSelection();
       const { jsPDF } = window.jspdf;
       html2canvas(document.getElementById('captureArea')).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
