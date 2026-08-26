@@ -26,7 +26,7 @@
     .btn-pdf { background: #dc3545; }
     .btn-pdf:hover { background: #c82333; }
     
-    .student-pool { min-height: 90px; border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; margin-top: 10px; max-height: 220px; overflow-y: auto; }
+    .student-pool { min-height: 120px; border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; margin-top: 10px; max-height: 250px; overflow-y: auto; }
     
     .main-content { flex: 1; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
     .seating-container { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px; }
@@ -42,13 +42,14 @@
 
     .seating-grid { display: grid; gap: 10px; flex: 1; }
     
-    .seat { border: 2px dashed #cbd5e1; min-height: 115px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
-    .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
+    /* 座位框高度調大以放入更大相片 */
+    .seat { border: 2px dashed #cbd5e1; min-height: 135px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
+    .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
     
-    /* 學生卡片與頭像樣式（已加大相片） */
-    .student-card { width: 110px; height: 105px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 4px; transition: transform 0.1s, border-color 0.2s; position: relative; }
-    .student-card img.s-avatar { width: 55px; height: 55px; border-radius: 8px; object-fit: cover; border: 1px solid #93c5fd; margin-bottom: 4px; background-color: #fff; }
-    .student-card .s-info { font-size: 0.82rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 102px; line-height: 1.2; text-align: center; }
+    /* 學生卡片與相片再度加大 (75px) */
+    .student-card { width: 125px; height: 120px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 5px; transition: transform 0.1s, border-color 0.2s; position: relative; }
+    .student-card img.s-avatar { width: 75px; height: 75px; border-radius: 8px; object-fit: cover; border: 1.5px solid #93c5fd; margin-bottom: 4px; background-color: #fff; }
+    .student-card .s-info { font-size: 0.88rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 115px; line-height: 1.2; text-align: center; }
 
     /* 合班不同顏色標示 */
     .student-card.tag-a { background: #e0f2fe; border-color: #7dd3fc; }
@@ -101,7 +102,7 @@
 
   <!-- 右側座位圖區 -->
   <div class="main-content" id="captureArea">
-    <h1 id="classTitle" style="margin: 0 0 15px 0; font-size: 1.5rem; text-align: center; color: #1e293b;">座位表</h1>
+    <h1 id="classTitle" style="margin: 0 0 15px 0; font-size: 1.6rem; text-align: center; color: #1e293b;">座位表</h1>
     <div class="seating-container layout-top" id="seatingContainer">
       <div class="board board-top" id="boardElement">黑板 / 講台方向</div>
       <div class="seating-grid" id="seatingGrid"></div>
@@ -367,7 +368,6 @@
       });
     }
 
-    // 處理相片載入失敗時自動嘗試各種大小寫副檔名 (JPG, jpg, PNG, png)
     function handleImgError(img, name) {
       const step = parseInt(img.getAttribute('data-step') || '0');
       const extensions = ['JPG', 'jpg', 'PNG', 'png', 'jpeg', 'JPEG'];
@@ -376,7 +376,6 @@
         img.setAttribute('data-step', step + 1);
         img.src = `images/${name}.${extensions[step]}`;
       } else {
-        // 全都不存在時隱藏圖片
         img.style.display = 'none';
       }
     }
@@ -395,7 +394,6 @@
       card.setAttribute('ondragstart', 'drag(event)');
       card.setAttribute('onclick', 'handleCardClick(event)');
 
-      // 單行格式：例如 (3) 蔡子樂
       const infoText = student.displayNum ? `(${student.displayNum}) ${student.name}` : student.name;
 
       card.innerHTML = `
@@ -482,23 +480,23 @@
       }
     }
 
-    // 匯出高畫質 PNG
+    // 超高畫質匯出圖片 (scale: 3)
     function exportAsImage() {
       clearSelection();
-      html2canvas(document.getElementById('captureArea'), { scale: 2, useCORS: true }).then(canvas => {
+      html2canvas(document.getElementById('captureArea'), { scale: 3, useCORS: true }).then(canvas => {
         const link = document.createElement('a');
         link.download = document.getElementById('classSelect').value + '_班座位表.png';
-        link.href = canvas.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
       });
     }
 
-    // 匯出高畫質 PDF
+    // 超高畫質匯出 PDF (scale: 3)
     function exportAsPDF() {
       clearSelection();
       const { jsPDF } = window.jspdf;
-      html2canvas(document.getElementById('captureArea'), { scale: 2, useCORS: true }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
+      html2canvas(document.getElementById('captureArea'), { scale: 3, useCORS: true }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png', 1.0);
         const pdf = new jsPDF('landscape', 'mm', 'a4');
         pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
         pdf.save(document.getElementById('classSelect').value + '_班座位表.pdf');
