@@ -19,6 +19,10 @@
     
     .btn { width: 100%; padding: 9px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; transition: 0.2s; }
     .btn:hover { background: #0056b3; }
+    .btn-save { background: #6f42c1; }
+    .btn-save:hover { background: #593196; }
+    .btn-delete { background: #6c757d; padding: 5px 8px; font-size: 0.8rem; }
+    .btn-delete:hover { background: #5a6268; }
     .btn-clear { background: #fd7e14; }
     .btn-clear:hover { background: #e06805; }
     .btn-export { background: #28a745; }
@@ -42,16 +46,13 @@
 
     .seating-grid { display: grid; gap: 10px; flex: 1; }
     
-    /* 座位框高度調大以放入更大相片 */
     .seat { border: 2px dashed #cbd5e1; min-height: 135px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; transition: 0.2s; }
     .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.75rem; color: #94a3b8; font-weight: bold; }
     
-    /* 學生卡片與相片再度加大 (75px) */
     .student-card { width: 125px; height: 120px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 5px; transition: transform 0.1s, border-color 0.2s; position: relative; }
     .student-card img.s-avatar { width: 75px; height: 75px; border-radius: 8px; object-fit: cover; border: 1.5px solid #93c5fd; margin-bottom: 4px; background-color: #fff; }
     .student-card .s-info { font-size: 0.88rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 115px; line-height: 1.2; text-align: center; }
 
-    /* 合班不同顏色標示 */
     .student-card.tag-a { background: #e0f2fe; border-color: #7dd3fc; }
     .student-card.tag-b { background: #fef3c7; border-color: #fde047; }
     .student-card.selected { border: 2px solid #2563eb !important; transform: scale(1.05); box-shadow: 0 0 8px rgba(37,99,235,0.4); }
@@ -68,7 +69,18 @@
       </select>
     </div>
 
-    <h2>2. 座位與講台佈局</h2>
+    <h2>2. 儲存與載入方案</h2>
+    <button class="btn btn-save" onclick="saveLayout()">💾 儲存目前座位方案</button>
+    <div class="form-group" style="margin-top: 8px;">
+      <label>已存方案</label>
+      <div style="display:flex; gap:5px;">
+        <select id="savedLayouts" style="flex:1;"></select>
+        <button class="btn btn-delete" onclick="deleteLayout()" style="width:auto;">刪除</button>
+      </div>
+      <button class="btn" onclick="loadLayout()" style="background:#17a2b8;">📂 載入選定方案</button>
+    </div>
+
+    <h2>3. 座位與講台佈局</h2>
     <div class="form-group" style="display:flex; gap:8px;">
       <div>
         <label>列數 (Cols)</label>
@@ -95,7 +107,7 @@
     <h2>未安排座位學生</h2>
     <div class="student-pool" id="studentPool" ondragover="allowDrop(event)" ondrop="drop(event)" onclick="handlePoolClick(event)"></div>
 
-    <h2>3. 匯出座位表</h2>
+    <h2>4. 匯出座位表</h2>
     <button class="btn btn-export" onclick="exportAsImage()">下載為圖片 (PNG)</button>
     <button class="btn btn-pdf" onclick="exportAsPDF()" style="margin-top:5px;">下載為 PDF</button>
   </div>
@@ -299,6 +311,7 @@
         option.textContent = opt.text;
         select.appendChild(option);
       });
+      refreshSavedLayoutsDropdown();
       onClassChange();
     }
 
@@ -393,6 +406,7 @@
       card.id = 'student-' + studentIdCounter++;
       card.setAttribute('ondragstart', 'drag(event)');
       card.setAttribute('onclick', 'handleCardClick(event)');
+      card.setAttribute('data-student-json', JSON.stringify(student));
 
       const infoText = student.displayNum ? `(${student.displayNum}) ${student.name}` : student.name;
 
@@ -403,6 +417,141 @@
       return card;
     }
 
+    /****************************************************************
+     * 儲存與載入功能 (localStorage)
+     ****************************************************************/
+    function saveLayout() {
+      const currentClass = document.getElementById('classSelect').value;
+      const defaultName = `${currentClass}_座位表_${new Date().toLocaleDateString()}`;
+      const name = prompt("請輸入此座位方案的名稱：", defaultName);
+      if (!name) return;
+
+      const seatsData = [];
+      const seats = document.querySelectorAll('.seat');
+      seats.forEach(seat => {
+        const card = seat.querySelector('.student-card');
+        if (card) {
+          const sJson = JSON.parse(card.getAttribute('data-student-json'));
+          seatsData.push({
+            seatNum: seat.getAttribute('data-seat-num'),
+            student: sJson
+          });
+        }
+      });
+
+      const poolData = [];
+      const poolCards = document.querySelectorAll('#studentPool .student-card');
+      poolCards.forEach(card => {
+        poolData.push(JSON.parse(card.getAttribute('data-student-json')));
+      });
+
+      const layoutData = {
+        name: name,
+        classSelect: currentClass,
+        cols: document.getElementById('cols').value,
+        rows: document.getElementById('rows').value,
+        boardPosition: document.getElementById('boardPosition').value,
+        seatsData: seatsData,
+        poolData: poolData
+      };
+
+      const saved = JSON.parse(localStorage.getItem('seatingLayouts') || '{}');
+      saved[name] = layoutData;
+      localStorage.setItem('seatingLayouts', JSON.stringify(saved));
+
+      refreshSavedLayoutsDropdown();
+      document.getElementById('savedLayouts').value = name;
+      alert(`已成功儲存方案：「${name}」！`);
+    }
+
+    function refreshSavedLayoutsDropdown() {
+      const select = document.getElementById('savedLayouts');
+      select.innerHTML = '';
+      const saved = JSON.parse(localStorage.getItem('seatingLayouts') || '{}');
+      const keys = Object.keys(saved);
+      if (keys.length === 0) {
+        const opt = document.createElement('option');
+        opt.textContent = '-- 暫無已存方案 --';
+        select.appendChild(opt);
+      } else {
+        keys.forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function loadLayout() {
+      const name = document.getElementById('savedLayouts').value;
+      const saved = JSON.parse(localStorage.getItem('seatingLayouts') || '{}');
+      if (!saved[name]) {
+        alert("請選擇要載入的方案！");
+        return;
+      }
+
+      const data = saved[name];
+      document.getElementById('classSelect').value = data.classSelect;
+      document.getElementById('cols').value = data.cols;
+      document.getElementById('rows').value = data.rows;
+      document.getElementById('boardPosition').value = data.boardPosition;
+
+      document.getElementById('classTitle').innerText = '2026/2027年度 ' + data.classSelect + ' 班座位表';
+      changeBoardPosition();
+
+      // 清空面板
+      clearSelection();
+      const cols = parseInt(data.cols);
+      const rows = parseInt(data.rows);
+      const grid = document.getElementById('seatingGrid');
+      const pool = document.getElementById('studentPool');
+
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.innerHTML = '';
+      pool.innerHTML = '';
+
+      for (let i = 1; i <= cols * rows; i++) {
+        const seat = document.createElement('div');
+        seat.className = 'seat';
+        seat.setAttribute('data-seat-num', `${i}`);
+        seat.setAttribute('ondragover', 'allowDrop(event)');
+        seat.setAttribute('ondrop', 'drop(event)');
+        seat.setAttribute('onclick', 'handleSeatClick(event)');
+        grid.appendChild(seat);
+      }
+
+      // 還原座位學生
+      data.seatsData.forEach(item => {
+        const seatEl = grid.querySelector(`[data-seat-num="${item.seatNum}"]`);
+        if (seatEl) {
+          seatEl.appendChild(createStudentCard(item.student));
+        }
+      });
+
+      // 還原未安排學生
+      data.poolData.forEach(student => {
+        pool.appendChild(createStudentCard(student));
+      });
+
+      alert(`已載入方案：「${name}」`);
+    }
+
+    function deleteLayout() {
+      const name = document.getElementById('savedLayouts').value;
+      const saved = JSON.parse(localStorage.getItem('seatingLayouts') || '{}');
+      if (!saved[name]) return;
+
+      if (confirm(`確定要刪除方案「${name}」嗎？`)) {
+        delete saved[name];
+        localStorage.setItem('seatingLayouts', JSON.stringify(saved));
+        refreshSavedLayoutsDropdown();
+      }
+    }
+
+    /****************************************************************
+     * 座位拖曳與點擊互動 logic
+     ****************************************************************/
     function clearAllSeats() {
       clearSelection();
       const pool = document.getElementById('studentPool');
