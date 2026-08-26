@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2026/2027年度 班級座位編排系統</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; }
+    body { margin: 0; padding: 20px; background-color: #f4f6f8; display: flex; gap: 20px; }
+    
+    .sidebar { width: 320px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); height: 95vh; overflow-y: auto; }
+    .sidebar h2 { margin-top: 0; font-size: 1.1rem; color: #1e293b; border-bottom: 2px solid #007bff; padding-bottom: 5px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85rem; color: #475569; }
+    .form-group select, .form-group input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
+    
+    .btn { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 5px; }
+    .btn:hover { background: #0056b3; }
+    .btn-export { background: #28a745; }
+    .btn-export:hover { background: #218838; }
+    .btn-pdf { background: #dc3545; }
+    .btn-pdf:hover { background: #c82333; }
+    
+    .student-pool { min-height: 80px; border: 2px dashed #cbd5e1; padding: 10px; border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; margin-top: 10px; max-height: 200px; overflow-y: auto; }
+    
+    .main-content { flex: 1; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+    .seating-container { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px; }
+    .board { background: #1e293b; color: white; text-align: center; font-weight: bold; border-radius: 6px; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; }
+    
+    .board-top, .board-bottom { height: 40px; width: 100%; }
+    .board-left, .board-right { width: 40px; height: 100%; writing-mode: vertical-lr; text-orientation: upright; }
+    
+    .layout-top { flex-direction: column; }
+    .layout-bottom { flex-direction: column-reverse; }
+    .layout-left { flex-direction: row; }
+    .layout-right { flex-direction: row-reverse; }
+
+    .seating-grid { display: grid; gap: 12px; flex: 1; }
+    
+    .seat { border: 2px dashed #cbd5e1; height: 85px; border-radius: 8px; display: flex; justify-content: center; align-items: center; background: #f8fafc; position: relative; }
+    .seat::after { content: attr(data-seat-num); position: absolute; top: 3px; left: 5px; font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
+    
+    /* 純文字學生卡片 */
+    .student-card { width: 95px; height: 65px; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.05); user-select: none; padding: 2px; }
+    .student-card .s-num { color: #0369a1; font-size: 0.75rem; font-weight: bold; }
+    .student-card .s-name { font-size: 0.9rem; font-weight: bold; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 88px; }
+    .student-card .s-eng { font-size: 0.6rem; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 88px; }
+  </style>
+</head>
+<body>
+
+  <!-- 左側控制面板 -->
+  <div class="sidebar">
+    <h2>1. 選擇班別</h2>
+    <div class="form-group">
+      <label>班別 (Class)</label>
+      <select id="classSelect" onchange="loadClassData()">
+        <!-- 由 JS 生成選項 -->
+      </select>
+    </div>
+
+    <h2>2. 座位與講台佈局</h2>
+    <div class="form-group" style="display:flex; gap:8px;">
+      <div>
+        <label>列數 (Cols)</label>
+        <input type="number" id="cols" value="6" min="1" max="10">
+      </div>
+      <div>
+        <label>行數 (Rows)</label>
+        <input type="number" id="rows" value="5" min="1" max="10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>黑板 / 講台位置</label>
+      <select id="boardPosition" onchange="changeBoardPosition()">
+        <option value="top">上方</option>
+        <option value="bottom">下方</option>
+        <option value="left">左方</option>
+        <option value="right">右方</option>
+      </select>
+    </div>
+    <button class="btn" onclick="renderGridAndStudents()">重置 / 更新座位網格</button>
+
+    <h2>未安排座位學生</h2>
+    <div class="student-pool" id="studentPool" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+
+    <h2>3. 匯出座位表</h2>
+    <button class="btn btn-export" onclick="exportAsImage()">下載為圖片 (PNG)</button>
+    <button class="btn btn-pdf" onclick="exportAsPDF()" style="margin-top:5px;">下載為 PDF</button>
+  </div>
+
+  <!-- 右側座位圖區 -->
+  <div class="main-content" id="captureArea">
+    <h1 id="classTitle" style="margin: 0 0 15px 0; font-size: 1.5rem; text-align: center; color: #1e293b;">座位表</h1>
+    <div class="seating-container layout-top" id="seatingContainer">
+      <div class="board board-top" id="boardElement">黑板 / 講台方向</div>
+      <div class="seating-grid" id="seatingGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    /****************************************************************
+     * 全校學生名單資料庫 (2026/2027年度)
+     * 1A 班學生學號均改為 ""，不顯示學號
+     ****************************************************************/
+    const classData = {
+      "1A": [
+        { num: "", name: "陳梓洛", eng: "CHAN TSZ LOK" },
+        { num: "", name: "張梓伶", eng: "CHEUNG CHI LING" },
+        { num: "", name: "陳榮駿", eng: "CHSN WING JEUN" },
+        { num: "", name: "簡晟哲", eng: "KAN SHING CHIT NATHAN" },
+        { num: "", name: "劉曉琳", eng: "LAU HIU LAM" },
+        { num: "", name: "羅栩柔", eng: "LAW HUI YAU" },
+        { num: "", name: "蘇倬嶙", eng: "SO CHEUK LUN" },
+        { num: "", name: "譚子軒", eng: "TAM TSZ HIN" },
+        { num: "", name: "袁誠佑", eng: "YUEN LANCE" }
+      ],
+      "2A": [
+        { num: "1", name: "丁奕星", eng: "DING YIZING" },
+        { num: "2", name: "許浩鋒", eng: "HUI HO FUNG" },
+        { num: "3", name: "簡仲文", eng: "KAN CHUNG MAN HAYDEN" },
+        { num: "4", name: "黎玥彤", eng: "LAI YUET TUNG" },
+        { num: "5", name: "林悅怡", eng: "LAM YUET YI" },
+        { num: "6", name: "郎子欢", eng: "LANG ZIHUAN" },
+        { num: "7", name: "羅雅瞳", eng: "LAW NGA TUNG" },
+        { num: "8", name: "羅耀昇", eng: "LAW YIU SING JERRY" },
+        { num: "9", name: "李皓樺", eng: "LEE HO WA" },
+        { num: "10", name: "刘诺妍", eng: "LIU NUOYAN" },
+        { num: "11", name: "馬凱諾", eng: "MA HOI NOK" },
+        { num: "12", name: "馬凱誠", eng: "MA HOI SHING" },
+        { num: "13", name: "王諾軒", eng: "WONG NOK HIN" },
+        { num: "14", name: "王柏晞", eng: "WONG PAK HEI" },
+        { num: "15", name: "甄子晴", eng: "YAN TSZ CHING" },
+        { num: "16", name: "邱敏思", eng: "YAU MAN SZE" }
+      ],
+      "3A": [
+        { num: "1", name: "丁胤嘉", eng: "DING YINJIA" },
+        { num: "2", name: "何瀟兒", eng: "HO SIU YI" },
+        { num: "3", name: "何瀟然", eng: "HO SIU YIN" },
+        { num: "4", name: "龔恩童", eng: "KUNG YAN TUNG EUNICE" },
+        { num: "5", name: "刘润成", eng: "LIU RUNCHENG" },
+        { num: "6", name: "雷翰霖", eng: "LUI HON LAM" },
+        { num: "7", name: "沈柏霖", eng: "SHEN PAK LAM MAX" },
+        { num: "8", name: "王俊熙", eng: "WONG CHUN HEI" },
+        { num: "9", name: "黃皓勤", eng: "WONG HO KAN" },
+        { num: "10", name: "黃傲雒", eng: "WONG NGO LOK" },
+        { num: "11", name: "黃丞晞", eng: "WONG SHING HEI" },
+        { num: "12", name: "謝希怡", eng: "XIE HEI YEE HAILEY" },
+        { num: "13", name: "余奕林", eng: "YU YIK LAM" },
+        { num: "14", name: "鄭佑淇", eng: "ZGENG YOUQI" },
+        { num: "15", name: "戰杺嬡", eng: "ZHAN XINAI" }
+      ],
+      "3B": [
+        { num: "1", name: "陳朗軒", eng: "CHAN LONG HIN" },
+        { num: "2", name: "陳文迪", eng: "CHAN MAN TIK" },
+        { num: "3", name: "蔡子樂", eng: "CHOI TSZ LOK" },
+        { num: "4", name: "簡綽佑", eng: "KAN CHEUK YAU" },
+        { num: "5", name: "林奕希", eng: "LAM YIK HEI IAN" },
+        { num: "6", name: "施經善", eng: "SHI KING SIN KINSEY" },
+        { num: "7", name: "丁曉晨", eng: "TING HIU SEN" },
+        { num: "8", name: "王心沛", eng: "WONG SUM PUI" },
+        { num: "9", name: "楊沛家", eng: "YEUNG PUI GA" }
+      ],
+      "4A": [
+        { num: "1", name: "陳柏熹", eng: "CHAN ETHAN" },
+        { num: "2", name: "陳柏塱", eng: "CHAN PAK LONG" },
+        { num: "3", name: "張善", eng: "CHEUNG SIN" },
+        { num: "4", name: "范子妍", eng: "FAN ZIYAN" },
+        { num: "5", name: "何筠澤", eng: "HE JUNZE" },
+        { num: "6", name: "何卓文", eng: "HO CHEUK MAN" },
+        { num: "7", name: "梁梓洋", eng: "LEUNG JIMMY" },
+        { num: "8", name: "林霖祎", eng: "LIN LINYI" },
+        { num: "9", name: "徐晧甯", eng: "TSUI HO NING" },
+        { num: "10", name: "王名樂", eng: "WANG MING LOK" },
+        { num: "11", name: "王恩瑜", eng: "WANG YAN YU" },
+        { num: "12", name: "王子月", eng: "WANG ZI YUE" },
+        { num: "13", name: "黃永禧", eng: "WONG WING HEI ALEX" },
+        { num: "14", name: "甄樂希", eng: "YAN LOK HEI" },
+        { num: "15", name: "張熙雯", eng: "ZHANG HEI MAN" },
+        { num: "16", name: "張紫燁", eng: "ZHANG ZI YE" }
+      ],
+      "4B": [
+        { num: "1", name: "DANIEL", eng: "DE GUZMAN DANIEL REECE" },
+        { num: "2", name: "關皓天", eng: "KWAN HO TIN JAYDEN" },
+        { num: "3", name: "劉柏廸", eng: "LAU PAK TIK" },
+        { num: "4", name: "吳思慧", eng: "NG SZE WAI NATIN NIKI" },
+        { num: "5", name: "黃浩然", eng: "WONG SIGMUND" },
+        { num: "6", name: "李詠欣", eng: "WONGSRITHAT KANOKLUK" },
+        { num: "7", name: "楊羽林", eng: "YANG YULIN" },
+        { num: "8", name: "姚樂基", eng: "YIU LOK KEI" },
+        { num: "9", name: "曾俊嘉", eng: "ZENG ALGER RENZO LEE" }
+      ],
+      "5A": [
+        { num: "1", name: "區懿行", eng: "AU YI HANG" },
+        { num: "2", name: "區宇正", eng: "AU YU CHING" },
+        { num: "3", name: "蔡柏予", eng: "CHOI HERMES" },
+        { num: "4", name: "邓玉泓", eng: "DENG AIDEN" },
+        { num: "5", name: "傅仕昂", eng: "FU SHIANG" },
+        { num: "6", name: "郭明智", eng: "KWOK MING CHI" },
+        { num: "7", name: "李一萱", eng: "LI YIXUAN" },
+        { num: "8", name: "凌明慧", eng: "LING MING WAI" },
+        { num: "9", name: "刘淳权", eng: "LIU CHUNQUAN" },
+        { num: "10", name: "吳子軒", eng: "NG TSZ HIN" },
+        { num: "11", name: "譚梓善", eng: "TAM TSZ SIN" },
+        { num: "12", name: "曾柏嵐", eng: "TSANG PAK LAAM MYLES" },
+        { num: "13", name: "蔡焯烙", eng: "TSOI CHEUK LOK EDGAR" },
+        { num: "14", name: "黃纓雅", eng: "WONG YING NGA" },
+        { num: "15", name: "胡浚鋒", eng: "WU TSUN FUNG CARTER" },
+        { num: "16", name: "徐銘澤", eng: "XU MINGZE" },
+        { num: "17", name: "戰昇", eng: "ZHAN MADDOX CHARM" }
+      ],
+      "5B": [
+        { num: "1", name: "張筱煒", eng: "CHEUNG SIU WAI" },
+        { num: "2", name: "許多聞", eng: "HUI TO MAN DOMINIC" },
+        { num: "3", name: "郭馨月", eng: "KWOK HING YUET" },
+        { num: "4", name: "劉梓浩", eng: "LAU AUSTIN" },
+        { num: "5", name: "李觀彥", eng: "LI KWUN YIN" },
+        { num: "6", name: "藍柏喬", eng: "NAM PAK KIU" },
+        { num: "7", name: "潘樂行", eng: "POON LUCAS LOK HANG" },
+        { num: "8", name: "蘇嘉慧", eng: "SO KA WAI" },
+        { num: "9", name: "戴卓希", eng: "TAI CHEUK HEI HANSON" },
+        { num: "10", name: "黃乙秀", eng: "WONG YUET SAU" }
+      ],
+      "6A": [
+        { num: "1", name: "陳翺天", eng: "CHAN AO TIN" },
+        { num: "2", name: "陳霆軒", eng: "CHAN TING HIN" },
+        { num: "3", name: "陳仲希", eng: "CHEN GEORGE ZHONGXI" },
+        { num: "4", name: "陳睿淇", eng: "CHEN RUIQI" },
+        { num: "5", name: "蔡安琪", eng: "CHOI ON KI" },
+        { num: "6", name: "邓玉涛", eng: "DENG TONY" },
+        { num: "7", name: "葉梓謙", eng: "IP TSZ HIM FRANCIS" },
+        { num: "8", name: "梁愷庭", eng: "LEUNG HOI TING" },
+        { num: "9", name: "梁禮杰", eng: "LEUNG NATHAN" },
+        { num: "10", name: "林霖晞", eng: "LIN LINXI" },
+        { num: "11", name: "呂天慧", eng: "LUI TIN WAI" },
+        { num: "12", name: "LUNGMASHA", eng: "LIMBU" },
+        { num: "13", name: "吳清喬", eng: "NG CHING KIU" },
+        { num: "14", name: "任展弘", eng: "REN LAURENCE" },
+        { num: "15", name: "蘇子晴", eng: "SO TSZ CHING" },
+        { num: "16", name: "王子翔", eng: "WANG ZIXIANG" },
+        { num: "17", name: "黃靖晞", eng: "WONG CHING HEI" },
+        { num: "18", name: "黃塏晴", eng: "WONG HOI CHING" },
+        { num: "19", name: "王天朗", eng: "WONG TIN LONG" },
+        { num: "20", name: "葉歆鈺", eng: "YE XINYU" },
+        { num: "21", name: "曾俊豪", eng: "ZENG ANDRAE RILEY LEE" },
+        { num: "22", name: "曾鈺婷", eng: "ZENG ANICHKA REESE LEE" },
+        { num: "23", name: "趙錦藍", eng: "ZHAO JINLAN" }
+      ],
+      "6B": [
+        { num: "1", name: "陳愷澤", eng: "CHAN HOI CHAK" },
+        { num: "2", name: "蔡念喬", eng: "CHOI ATHENA" },
+        { num: "3", name: "黎釨洋", eng: "LAI TSE YEUNG" },
+        { num: "4", name: "李詠桐", eng: "LEE WING TUNG" },
+        { num: "5", name: "呂度澄", eng: "LUI TO CHING" },
+        { num: "6", name: "沈柚達", eng: "SHEN YAU TAT OLIVER" },
+        { num: "7", name: "施智傑", eng: "SZE CHI KIT" },
+        { num: "8", name: "唐志恆", eng: "TONG CHI HANG" },
+        { num: "9", name: "曾榮紫", eng: "TSANG WING TSZ" },
+        { num: "10", name: "嚴承軒", eng: "YIM SHING HIN" },
+        { num: "11", name: "姚浚楠", eng: "YIU CHUN NAM" }
+      ]
+    };
+
+    let studentIdCounter = 1;
+
+    // 初始化選單
+    function initClassSelect() {
+      const select = document.getElementById('classSelect');
+      select.innerHTML = '';
+      for (let className in classData) {
+        const option = document.createElement('option');
+        option.value = className;
+        option.textContent = className + ' 班';
+        select.appendChild(option);
+      }
+      loadClassData();
+    }
+
+    // 載入選擇班別
+    function loadClassData() {
+      const selectedClass = document.getElementById('classSelect').value;
+      document.getElementById('classTitle').innerText = '2026/2027年度 ' + selectedClass + ' 班座位表';
+      renderGridAndStudents();
+    }
+
+    // 切換講台位置
+    function changeBoardPosition() {
+      const pos = document.getElementById('boardPosition').value;
+      const container = document.getElementById('seatingContainer');
+      const board = document.getElementById('boardElement');
+
+      container.className = 'seating-container layout-' + pos;
+      board.className = 'board board-' + pos;
+    }
+
+    // 生成網格並自動把學生排入座位
+    function renderGridAndStudents() {
+      const cols = parseInt(document.getElementById('cols').value) || 6;
+      const rows = parseInt(document.getElementById('rows').value) || 5;
+      const grid = document.getElementById('seatingGrid');
+      const pool = document.getElementById('studentPool');
+      
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      grid.innerHTML = '';
+      pool.innerHTML = '';
+
+      const selectedClass = document.getElementById('classSelect').value;
+      const students = classData[selectedClass] || [];
+
+      let totalSeats = cols * rows;
+
+      // 1. 生成所有座位
+      for (let i = 1; i <= totalSeats; i++) {
+        const seat = document.createElement('div');
+        seat.className = 'seat';
+        seat.setAttribute('data-seat-num', `${i}`);
+        seat.setAttribute('ondragover', 'allowDrop(event)');
+        seat.setAttribute('ondrop', 'drop(event)');
+        grid.appendChild(seat);
+      }
+
+      // 2. 預設按名單順序填入座位
+      const seats = grid.children;
+      students.forEach((student, index) => {
+        const card = createStudentCard(student.num, student.name, student.eng);
+        if (index < totalSeats) {
+          seats[index].appendChild(card);
+        } else {
+          pool.appendChild(card);
+        }
+      });
+    }
+
+    // 建立純文字卡片 (若學號為空則不顯示括號)
+    function createStudentCard(num, name, eng) {
+      const card = document.createElement('div');
+      card.className = 'student-card';
+      card.draggable = true;
+      card.id = 'student-' + studentIdCounter++;
+      card.setAttribute('ondragstart', 'drag(event)');
+
+      const numHtml = num ? `<div class="s-num">(${num})</div>` : '';
+
+      card.innerHTML = `
+        ${numHtml}
+        <div class="s-name">${name}</div>
+        <div class="s-eng">${eng || ''}</div>
+      `;
+      return card;
+    }
+
+    // 拖拉 (Drag and Drop)
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const cardId = ev.dataTransfer.getData("text");
+      const card = document.getElementById(cardId);
+      let target = ev.target;
+      
+      if (!target.classList.contains('seat') && !target.classList.contains('student-pool')) {
+        target = target.closest('.seat') || target.closest('.student-pool');
+      }
+
+      if (target) {
+        if (target.classList.contains('seat') && target.children.length > 0) {
+          document.getElementById('studentPool').appendChild(target.children[0]);
+        }
+        target.appendChild(card);
+      }
+    }
+
+    // 匯出圖片與 PDF
+    function exportAsImage() {
+      html2canvas(document.getElementById('captureArea')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = document.getElementById('classSelect').value + '_班座位表.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    function exportAsPDF() {
+      const { jsPDF } = window.jspdf;
+      html2canvas(document.getElementById('captureArea')).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('landscape', 'mm', 'a4');
+        pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
+        pdf.save(document.getElementById('classSelect').value + '_班座位表.pdf');
+      });
+    }
+
+    initClassSelect();
+  </script>
+</body>
+</html>
